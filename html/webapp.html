@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Workout Week Planner</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #f4f4f4;
+  }
+  header {
+    width: 100%;
+    background-color: #3498db;
+    color: white;
+    padding: 20px 0;
+    text-align: center;
+    box-sizing: border-box;
+  }
+  .container {
+    display: flex;
+    width: 95%;
+    max-width: 1400px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+  .workouts {
+    flex: 1 1 15%;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+  .workout-item {
+    background: #3498db;
+    color: white;
+    padding: 5px;
+    margin: 5px 0;
+    text-align: center;
+    border-radius: 5px;
+    cursor: grab;
+    font-size: 0.8rem;
+  }
+  .planner {
+    flex: 1 1 85%;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+  .week {
+    margin-bottom: 20px;
+  }
+  .days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+  }
+  .day {
+    border: 2px dashed #ccc;
+    padding: 5px;
+    min-height: 100px;
+    border-radius: 5px;
+    background: #f9f9f9;
+    min-width: 0;
+  }
+  .day h4 {
+    margin: 0 0 5px 0;
+    font-size: 1rem;
+    text-align: center;
+  }
+  .day .workout-item {
+    cursor: pointer;
+  }
+  .controls {
+    margin: 10px 0;
+    display: flex;
+    gap: 10px;
+    width: 95%;
+    max-width: 1400px;
+  }
+  button {
+    padding: 8px 12px;
+    font-size: 1rem;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background: #2ecc71;
+    color: white;
+  }
+  button.remove {
+    background: #e74c3c;
+  }
+  button.clear {
+    background: #f39c12;
+  }
+  button.save {
+    background: #2980b9;
+  }
+  @media (max-width: 768px) {
+    .workouts {
+      flex: 1 1 100%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .planner {
+      flex: 1 1 100%;
+    }
+    .controls {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Workout Week Planner</h1>
+  <p>Drag and drop workouts per day! Click the workout on the day to remove it. Click save once you're satisfied with your plan to save it to your device!</p>
+  <p>Click <a href="scratch.html">here</a> to return to the main scratch page!</p>
+</header>
+<div class="controls">
+  <button onclick="addWeek()">Add Week</button>
+  <button class="remove" onclick="removeWeek()">Remove Week</button>
+  <button class="clear" onclick="clearAll()">Clear All</button>
+  <button class="save" onclick="saveAsImage()">Save</button>
+</div>
+<div class="container" id="container">
+  <div class="workouts" id="workouts">
+    <div class="workout-item" draggable="true">Push</div>
+    <div class="workout-item" draggable="true">Pull</div>
+    <div class="workout-item" draggable="true">Legs</div>
+    <div class="workout-item" draggable="true">Upper</div>
+    <div class="workout-item" draggable="true">Lower</div>
+    <div class="workout-item" draggable="true">Arms</div>
+    <div class="workout-item" draggable="true">Back</div>
+    <div class="workout-item" draggable="true">Chest</div>
+    <div class="workout-item" draggable="true">Shoulders</div>
+    <div class="workout-item" draggable="true">Rest</div>
+  </div>
+  <div class="planner" id="planner"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+  const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  let weekCount = 1;
+
+  // Save current plan state as an object:
+  // { weekIndex: { dayName: [array of workouts] } }
+  function savePlanState() {
+    const state = {};
+    const weeks = document.querySelectorAll('.week');
+    weeks.forEach((weekEl, weekIdx) => {
+      state[weekIdx] = {};
+      const days = weekEl.querySelectorAll('.day');
+      days.forEach(dayEl => {
+        const dayName = dayEl.querySelector('h4').textContent;
+        const workouts = [];
+        dayEl.querySelectorAll('.workout-item').forEach(workoutEl => {
+          workouts.push(workoutEl.textContent);
+        });
+        state[weekIdx][dayName] = workouts;
+      });
+    });
+    return state;
+  }
+
+  // Restore plan state object to DOM
+  function restorePlanState(state) {
+    const planner = document.getElementById('planner');
+    planner.innerHTML = ''; // clear before re-adding weeks
+    for (let i = 0; i < weekCount; i++) {
+      const week = createWeek(i + 1);
+      // Add saved workouts if exist
+      if (state[i]) {
+        const days = week.querySelectorAll('.day');
+        days.forEach(dayEl => {
+          const dayName = dayEl.querySelector('h4').textContent;
+          const workouts = state[i][dayName] || [];
+          workouts.forEach(w => {
+            const workoutEl = document.createElement('div');
+            workoutEl.className = 'workout-item';
+            workoutEl.textContent = w;
+            workoutEl.addEventListener('click', () => workoutEl.remove());
+            dayEl.appendChild(workoutEl);
+          });
+        });
+      }
+      planner.appendChild(week);
+    }
+  }
+
+  function createWeek(index) {
+    const week = document.createElement('div');
+    week.className = 'week';
+    const daysContainer = document.createElement('div');
+    daysContainer.className = 'days';
+    daysOfWeek.forEach(dayName => {
+      const day = document.createElement('div');
+      day.className = 'day';
+      day.innerHTML = `<h4>${dayName}</h4>`;
+      day.addEventListener('dragover', e => e.preventDefault());
+      day.addEventListener('drop', e => {
+        e.preventDefault();
+        const data = e.dataTransfer.getData('text');
+        const item = document.createElement('div');
+        item.className = 'workout-item';
+        item.textContent = data;
+        item.addEventListener('click', () => item.remove());
+        day.appendChild(item);
+      });
+      daysContainer.appendChild(day);
+    });
+    week.appendChild(daysContainer);
+    return week;
+  }
+
+  function renderPlanner() {
+    // Just restore with current weekCount, keeping saved state
+    const savedState = savePlanState();
+    restorePlanState(savedState);
+  }
+
+  function addWeek() {
+    weekCount++;
+    renderPlanner();
+  }
+
+  function removeWeek() {
+    if (weekCount > 1) {
+      weekCount--;
+      renderPlanner();
+    }
+  }
+
+  function clearAll() {
+    document.querySelectorAll('.day').forEach(day => {
+      day.innerHTML = `<h4>${day.querySelector('h4').textContent}</h4>`;
+    });
+  }
+
+  function saveAsImage() {
+    const container = document.getElementById('container');
+    html2canvas(container).then(canvas => {
+      const link = document.createElement('a');
+      link.download = 'workout-plan.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    });
+  }
+
+  document.querySelectorAll('.workout-item').forEach(item => {
+    item.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text', item.textContent);
+    });
+  });
+
+  renderPlanner();
+</script>
+</body>
+</html>
